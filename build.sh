@@ -17,6 +17,7 @@ typeset -a CARGS=(
     --prefix /usr
     --deb-no-default-config-files
     --vendor "Istvan Szekeres"
+    --url "https://github.com/Pistahh/certcheck"
     -p output
 )
 
