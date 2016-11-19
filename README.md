@@ -24,7 +24,7 @@ It should be easy to integrate into monitoring tools (e.g. Zabbix).
     % certcheck google.com
     From: 20161110154553Z
     To: 20170202153100Z
-    Day remaining: 74
+    Days remaining: 74
     % certcheck -d google.com:443
     74
     %
