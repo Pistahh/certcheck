@@ -1,0 +1,72 @@
+#!/usr/bin/python2
+
+from sys import argv, stdout
+from socket import socket
+from OpenSSL.SSL import TLSv1_METHOD, Context, Connection, Error
+from datetime import datetime
+import argparse as ap
+
+def get_cert(hostname, port=443):
+    try:
+        client = socket()
+        client.connect((hostname, port))
+
+        client_ssl = Connection(Context(TLSv1_METHOD), client)
+        client_ssl.set_connect_state()
+        client_ssl.set_tlsext_host_name(hostname)
+        client_ssl.do_handshake()
+        cert = client_ssl.get_peer_certificate()
+        client_ssl.close()
+        return cert
+    except Error:
+        return None
+
+def get_cert_notafter(cert):
+    s = cert.get_notAfter()
+    na = datetime.strptime(s, "%Y%m%d%H%M%SZ")
+    return na
+
+def get_cert_exp_remain_days(cert):
+    na = get_cert_notafter(cert)
+    today = datetime.today()
+    d = na-today
+    return d.days
+
+def get_args():
+    p = ap.ArgumentParser(description="Cert Checker")
+    p.add_argument('-f', action="store_true", help="Show only 'from' date")
+    p.add_argument('-t', action="store_true", help="Show only 'to' date")
+    p.add_argument('-d', action="store_true", help="Show days until expiry")
+    p.add_argument('SERVICE', nargs=1, help="Service to check: HOST[:PORT]")
+
+    return p.parse_args()
+
+def main():
+    args = get_args()
+
+    hp = args.SERVICE[0].split(":", 2)
+    if len(hp) == 2:
+        host, port = hp
+        port = int(port)
+    elif len(hp) == 1:
+        host = hp[0]
+        port = 443
+    else:
+        raise RuntimeError("Invalid service, must be host[:port]")
+
+    cert = get_cert(host, port)
+    if cert is None:
+        raise RuntimeError("SSL error or no cert found")
+    if args.d:
+        print get_cert_exp_remain_days(cert)
+    elif args.f:
+        print cert.get_notBefore()
+    elif args.t:
+        print cert.get_notAfter()
+    else:
+        print "From:", cert.get_notBefore()
+        print "To:", cert.get_notAfter()
+        print "Days remaining:", get_cert_exp_remain_days(cert)
+
+if __name__ == "__main__":
+    main()
